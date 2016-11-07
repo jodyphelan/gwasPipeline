@@ -68,6 +68,10 @@ def flip_snp():
 				okFile.write(rid+"\n")
 			elif (ref_nuc != ref) and (ref_nuc != ref):
 				revFile.write(rid+"\n")
+	ambFile.close()
+	revFile.close()
+	errFile.close()
+	okFile.close()
 	subprocess.call("cat %s.notFound.txt %s.ambiguous.txt > %s.exclude.txt" % (sample_name,sample_name,sample_name), shell=True)
 	plink_cmd = "plink --no-sex --bfile %s --exclude %s.exclude.txt --flip %s.reverse.txt --make-bed --out %s" % ("genotypes/"+sample_name,sample_name,sample_name,sample_name+".flipped")
 	subprocess.call(plink_cmd,shell=True)

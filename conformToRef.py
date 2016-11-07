@@ -41,7 +41,8 @@ for line in proc.stdout:
 	idSet.add(rid)
 	ref_var_dict[rid] = {"chr":chr,"pos":pos,"ref":ref,"alt":alt}
 	pos2id_dict[pos] = rid 
-	
+
+logFh = open("%s.log" % sample,"w")
 targetFh = open("%s.%s.preimpute.vcf" % (sample,chrom),"w")
 with open("%s.%s.raw.vcf"%(sample,chrom)) as f:
 	for i,line in enumerate(tqdm(f)):
@@ -52,8 +53,9 @@ with open("%s.%s.raw.vcf"%(sample,chrom)) as f:
 		chr,pos,rid,ref,alt = arr[:5]
 		if rid in idSet:
 			if (ref == ref_var_dict[rid]["alt"]) and (alt == ref_var_dict[rid]["ref"]):
+				logFh.write(rid+"\n")
 				arr[3],arr[4] = arr[4],arr[3]	
-				for i in range(len(arr[9:])):
+				for i in range(9,len(arr)):
 					arr[i] = arr[i].translate(string.maketrans("01","10"))
 				targetFh.write("\t".join(arr)+"\n")	
 			elif(alt == ref_var_dict[rid]["alt"]) and (ref == ref_var_dict[rid]["ref"]):
