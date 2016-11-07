@@ -66,3 +66,4 @@ with open("%s.%s.raw.vcf"%(sample,chrom)) as f:
 			pass
 				  
 
+
