@@ -102,21 +102,64 @@ def cleanup(base_dir,sample):
 
 
 def preprocess(args):
-	flip_snp(args.ref,args.sample,args.threads)
+	flip_snp("ref_fasta/ref_fasta.fa",args.sample,args.threads)
 	cleanup(args.base_dir,args.sample)
 
 def impute(args):
 	sample = args.sample
 	chr = args.chr
-	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=refVCF/chr%s.1kg.phase3.v5a.vcf.gz map=map/plink.chr%s.GRCh37.map out=%s.%s.imputed.vcf nthreads=%s" % (sample,chr,chr,chr,sample,chr,args.threads)
+	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=%s.%s.imputed nthreads=%s" % (sample,chr,chr,chr,sample,chr,args.threads)
 	subprocess.call(beagle_cmd,shell=True)
+
+def init(args):
+	config = [x.rstrip() for x in open(args.config).readlines()]
+	data_dict = {}
+	for line in config:
+		arr = line.split()
+		data_dict[arr[0]] = arr[1] 
+
+	ref_check = "ref_fasta" in data_dict.keys()
+	print "Checing for reference Fasta: %s" % ref_check
+	vcf_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="vcf", data_dict.keys())]) == range(1,23)
+	print "Checing for reference VCF files: %s" % vcf_test
+	map_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="map", data_dict.keys())]) == range(1,23)
+	print "Checing for reference map files: %s" % map_test
+	
+	print "Creating directory structure"
+	if not os.path.isdir("ref_vcf"):
+		subprocess.call("mkdir ref_vcf",shell=True)
+	if not os.path.isdir("ref_map"):
+		subprocess.call("mkdir ref_map",shell=True)
+	if not os.path.isdir("ref_fasta"):
+		subprocess.call("mkdir ref_fasta",shell=True)
+	if not os.path.isdir("genotypes"):
+		subprocess.call("mkdir genotypes",shell=True)
+
+	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
+	subprocess.call(fa_cmd,shell=True)	
+	for i in range(1,23):
+		ref_vcf = "ref_vcf_%s" % i
+		vcf_cmd = "ln -s %s ref_vcf/%s" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
+		subprocess.call(vcf_cmd,shell=True)
+		ref_map = "ref_map_%s" % i
+		map_cmd = "ln -s %s ref_map/%s" % (data_dict[ref_map], ref_map+".map")
+		subprocess.call(map_cmd,shell=True)	
+	with open("chromosomes.txt","w") as o:
+		if "chromosomes" in data_dict.keys():
+			for i in data_dict["chromosomes"].split(","):
+				o.write(i+"\n")
+		else:
+			for i in range(1,23):
+				o.write(str(i)+"\n")
+	print "Indexing VCFs"
+	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"~/software/bcftools-1.3.1/htslib-1.3.1/tabix ref_vcf/ref_vcf_{}.vcf.gz\""
+	subprocess.call(index_cmd,shell=True)	
 
 parser = argparse.ArgumentParser(description='Python wrapper to filter variants',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 subparsers = parser.add_subparsers(help="Task to perform")
 
 parser_raw = subparsers.add_parser('preprocess', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser_raw.add_argument('sample',help='RefFile')
-parser_raw.add_argument('ref',help='RefFile')
 parser_raw.add_argument('base_dir',help='RefFile')
 parser_raw.add_argument('threads',help='RefFile')
 parser_raw.set_defaults(func=preprocess)
@@ -126,6 +169,10 @@ parser_raw.add_argument('sample',help='RefFile')
 parser_raw.add_argument('chr',help='RefFile')
 parser_raw.add_argument('threads',help='RefFile')
 parser_raw.set_defaults(func=impute)
+
+parser_raw = subparsers.add_parser('init', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_raw.add_argument('config',help='RefFile')
+parser_raw.set_defaults(func=init)
 
 
 args = parser.parse_args()

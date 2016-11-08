@@ -17,7 +17,7 @@ ref_var_dict = {}
 pos2id_dict = {}
 posSet = set()
 print "Processing chr"+chrom+" VCF"
-refVCF = "refVCF/chr"+chrom+".1kg.phase3.v5a.vcf.gz"
+refVCF = "ref_vcf/ref_vcf_"+chrom+".vcf.gz"
 #with gzip.open(refVCF,"rb") as f:
 #	for i,line in enumerate(tqdm(f)):
 #		if line[0] == "#": 
