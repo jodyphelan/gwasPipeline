@@ -1,3 +1,4 @@
+#! /home/jody/software/anaconda2/bin/python
 import sys
 from tqdm import tqdm
 import subprocess
@@ -93,8 +94,7 @@ def flip_snp(ref_file,sample,threads):
 
 
 def cleanup(base_dir,sample):
-	subprocess.call("rm %s.*.bed" % sample, shell=True)
-	subprocess.call("rm %s.nosex" % sample, shell=True)
+#	subprocess.call("rm %s.*.bed" % sample, shell=True)
 	if not os.path.isdir(base_dir+"/preimpute"):
 		subprocess.call("mkdir "+base_dir+"/preimpute",shell=True)
 	subprocess.call("mv %s* preimpute" % sample, shell=True)
@@ -106,9 +106,12 @@ def preprocess(args):
 	cleanup(args.base_dir,args.sample)
 
 def impute(args):
+	if not os.path.isdir("imputed_vcf"):
+		subprocess.call("mkdir imputed_vcf",shell=True)
+	
 	sample = args.sample
 	chr = args.chr
-	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=%s.%s.imputed nthreads=%s" % (sample,chr,chr,chr,sample,chr,args.threads)
+	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (sample,chr,chr,chr,sample,chr,args.threads)
 	subprocess.call(beagle_cmd,shell=True)
 
 def init(args):
@@ -155,6 +158,41 @@ def init(args):
 	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"~/software/bcftools-1.3.1/htslib-1.3.1/tabix ref_vcf/ref_vcf_{}.vcf.gz\""
 	subprocess.call(index_cmd,shell=True)	
 
+
+def fa2json(args):
+	fa_dict = fa2dict(args.fasta)
+	open(args.out,"w").write(json.dumps(fa_dict))
+
+
+
+
+def mergeImputed(sample):
+	chromosomes = [x.rstrip() for x in open("chromosomes.txt").readlines()]		
+	with gzip.open(sample+".imputed.vcf.gz","wb") as o:
+		test = True
+		with gzip.open("imputed_vcf/"+sample+"."+chromosomes[0]+".imputed.vcf.gz","rb") as f:
+			while test==True:
+				line = f.readline()
+				if line[0]=="#":
+					o.write(line)
+				else:
+					test = False
+		for i in tqdm(range(len(chromosomes))):
+			chrom = chromosomes[i]
+			for line in gzip.open("imputed_vcf/"+sample+"."+chrom+".imputed.vcf.gz","rb"):
+				if line[0]!="#":
+					o.write(line)
+				
+def imputationQC(args):
+	vcf_file =  "imputed_vcf/"+args.sample+".all.vcf.gz" 
+	preQC_prefix = "imputation_QC/"+args.sample+".preQC"
+	postQC_prefix = "imputation_QC/"+args.sample+".postQC"
+	#mergeImputed(args.sample)
+	if not os.path.isdir("imputation_QC"):
+		subprocess.call("mkdir imputation_QC",shell=True)
+#	subprocess.call("plink --vcf "+vcf_file+" --make-bed --out "+preQC_prefix+" --const-fid",shell=True)
+	subprocess.call("plink --bfile "+preQC_prefix+" --maf "+args.maf+" --geno "+args.geno+" --hwe "+args.hwe+" --make-bed --out "+postQC_prefix,shell=True)
+
 parser = argparse.ArgumentParser(description='Python wrapper to filter variants',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 subparsers = parser.add_subparsers(help="Task to perform")
 
@@ -174,6 +212,17 @@ parser_raw = subparsers.add_parser('init', help='Generate raw unfiltered matrix'
 parser_raw.add_argument('config',help='RefFile')
 parser_raw.set_defaults(func=init)
 
+parser_raw = subparsers.add_parser('fa2json', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_raw.add_argument('fasta',help='RefFile')
+parser_raw.add_argument('out',help='RefFile')
+parser_raw.set_defaults(func=fa2json)
+
+parser_raw = subparsers.add_parser('imputeQC', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_raw.add_argument('sample',help='RefFile')
+parser_raw.add_argument('maf',help='RefFile')
+parser_raw.add_argument('geno',help='RefFile')
+parser_raw.add_argument('hwe',help='RefFile')
+parser_raw.set_defaults(func=imputationQC)
 
 args = parser.parse_args()
 args.func(args)
