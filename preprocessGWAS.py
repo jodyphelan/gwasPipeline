@@ -38,7 +38,7 @@ def fa2dict(filename):
 	return result
 
 
-def flip_snp(ref_file,sample,threads):
+def flip_snp(ref_file,sample):
 	print "Loading reference"
 	fa_dict = fa2dict(ref_file)
 	bim_file =  "genotypes/"+sample+".bim"
@@ -89,9 +89,10 @@ def flip_snp(ref_file,sample,threads):
 	plink_cmd = "plink --no-sex --bfile %s --exclude %s.exclude.txt --flip %s.reverse.txt --make-bed --out %s" % ("genotypes/"+sample,sample,sample,sample+".flipped")
 	subprocess.call(plink_cmd,shell=True)
 	open(sample+".flipFilter.json","w").write(json.dumps(log_dict))
+
+def split_by_chr(base_dir,sample,threads):
 	xargs_cmd = "cat chromosomes.txt | xargs -i -P%s sh -c \"python %s/conformToRef.py {} %s\"" % (threads,script_dir,sample)
 	subprocess.call(xargs_cmd,shell=True)
-
 
 def cleanup(base_dir,sample):
 #	subprocess.call("rm %s.*.bed" % sample, shell=True)
@@ -102,7 +103,7 @@ def cleanup(base_dir,sample):
 
 
 def preprocess(args):
-	flip_snp("ref_fasta/ref_fasta.fa",args.sample,args.threads)
+	flip_snp("ref_fasta/ref_fasta.fa",args.sample)
 	cleanup(args.base_dir,args.sample)
 
 def impute(args):
@@ -110,14 +111,15 @@ def impute(args):
 		subprocess.call("mkdir imputed_vcf",shell=True)
 	
 	sample = args.sample
-	chr = args.chr
-	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (sample,chr,chr,chr,sample,chr,args.threads)
+	chrom = args.chr
+	subprocess.call("python %s/conformToRef.py %s preimpute/%s" % (script_dir,chrom,sample),shell=True)
+	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (sample,chrom,chrom,chrom,sample,chrom,args.threads)
+	print beagle_cmd
 	subprocess.call(beagle_cmd,shell=True)
 
 def init(args):
-	config = [x.rstrip() for x in open(args.config).readlines()]
 	data_dict = {}
-	for line in config:
+	for line in [x.rstrip() for x in open(args.config).readlines()]:
 		arr = line.split()
 		data_dict[arr[0]] = arr[1] 
 
@@ -129,14 +131,9 @@ def init(args):
 	print "Checing for reference map files: %s" % map_test
 	
 	print "Creating directory structure"
-	if not os.path.isdir("ref_vcf"):
-		subprocess.call("mkdir ref_vcf",shell=True)
-	if not os.path.isdir("ref_map"):
-		subprocess.call("mkdir ref_map",shell=True)
-	if not os.path.isdir("ref_fasta"):
-		subprocess.call("mkdir ref_fasta",shell=True)
-	if not os.path.isdir("genotypes"):
-		subprocess.call("mkdir genotypes",shell=True)
+	for x in ["ref_vcf","ref_map","ref_fasta","genotypes","plots","logs"]:
+		if not os.path.isdir(x):
+			subprocess.call("mkdir %s"%x,shell=True)
 
 	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
 	subprocess.call(fa_cmd,shell=True)	
@@ -158,7 +155,24 @@ def init(args):
 	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"~/software/bcftools-1.3.1/htslib-1.3.1/tabix ref_vcf/ref_vcf_{}.vcf.gz\""
 	subprocess.call(index_cmd,shell=True)	
 
+	file_paths = data_dict["genotypes"].split(",")
+	file_prefix = [x.split("/")[-1] for x in file_paths]
+	print "Linking Genotypes"
+	for i,x in enumerate(file_paths):
+		y = file_prefix[i]
+		subprocess.call("ln -s %s.bed genotypes/%s.bed" % (x,y),shell=True)
+		subprocess.call("ln -s %s.bim genotypes/%s.bim" % (x,y),shell=True)
+		subprocess.call("ln -s %s.fam genotypes/%s.fam" % (x,y),shell=True)
 
+	with open("runAnalysis.sh","w") as o:
+		for i,x in enumerate(file_paths):
+			y = file_prefix[i]	
+			o.write("%s preprocess %s .\n" % (sys.argv[0],y))
+		temp = ",".join(["preimpute/"+x+".flipped" for x in file_prefix])
+		o.write("%s/relaxed_merge.py %s merged.flipped --pca\n" % (script_dir,temp))
+			
+
+	
 def fa2json(args):
 	fa_dict = fa2dict(args.fasta)
 	open(args.out,"w").write(json.dumps(fa_dict))
@@ -199,7 +213,6 @@ subparsers = parser.add_subparsers(help="Task to perform")
 parser_raw = subparsers.add_parser('preprocess', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser_raw.add_argument('sample',help='RefFile')
 parser_raw.add_argument('base_dir',help='RefFile')
-parser_raw.add_argument('threads',help='RefFile')
 parser_raw.set_defaults(func=preprocess)
 
 parser_raw = subparsers.add_parser('impute', help='Generate raw unfiltered matrix', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
