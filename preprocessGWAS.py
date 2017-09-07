@@ -149,7 +149,8 @@ def init(args):
 	subprocess.call(fa_cmd,shell=True)	
 	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
-		vcf_cmd = "ln -s %s ref_vcf/%s" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
+		vcf_cmd = "ln -s %s ref_vcf/%s && ln -s %s.tbi ref_vcf/%s.tbi" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
+				
 		subprocess.call(vcf_cmd,shell=True)
 		ref_map = "ref_map_%s" % i
 		map_cmd = "ln -s %s ref_map/%s" % (data_dict[ref_map], ref_map+".map")
@@ -161,9 +162,9 @@ def init(args):
 		else:
 			for i in range(1,num_chromosomes):
 				o.write(str(i)+"\n")
-	print "Indexing VCFs"
-	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"%s ref_vcf/ref_vcf_{}.vcf.gz\"" % tabix
-	subprocess.call(index_cmd,shell=True)	
+#	print "Indexing VCFs"
+#	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"%s ref_vcf/ref_vcf_{}.vcf.gz\"" % tabix
+#	subprocess.call(index_cmd,shell=True)	
 
 	file_paths = data_dict["genotypes"].split(",")
 	file_prefix = [x.split("/")[-1] for x in file_paths]
