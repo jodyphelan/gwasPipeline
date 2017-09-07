@@ -145,7 +145,7 @@ def init(args):
 	for x in ["ref_vcf","ref_map","ref_fasta","genotypes","plots","logs"]:
 		if not os.path.isdir(x):
 			subprocess.call("mkdir %s"%x,shell=True)
-	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
+	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa.gz" if data_dict["ref_fasta"][-3:]==".gz" else "ref_fasta.fa")
 	subprocess.call(fa_cmd,shell=True)	
 	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
