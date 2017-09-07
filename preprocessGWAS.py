@@ -109,6 +109,7 @@ def cleanup(base_dir,sample):
 
 
 def preprocess(args):
+	conf = json.load(open("config.json"))
 	flip_snp("ref_fasta/ref_fasta.fa",args.sample)
 	cleanup(args.base_dir,args.sample)
 
@@ -129,7 +130,7 @@ def init(args):
 	for line in [x.rstrip() for x in open(args.config).readlines()]:
 		arr = line.split()
 		data_dict[arr[0]] = arr[1] 
-
+	json.dump(data_dict,open("config.json","w"))
 	
 	num_chromosomes = len([d for d in data_dict.keys() if "ref_vcf" in d])+1
 
