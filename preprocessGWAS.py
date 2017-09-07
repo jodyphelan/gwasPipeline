@@ -28,15 +28,12 @@ def fa2dict(filename):
 	fa_dict = {}
 	seq_name = ""
 	for l in gzip.open(filename) if filename[-3:]==".gz" else open(filename):
-		print l
-	with gzip.open(filename) if filename[-3:]==".gz" else open(filename) as f:
-		for i in (range(file_len(filename))):
-			line = f.readline().rstrip()
-			if line[0] == ">":
-				seq_name = line[1:].split()[0]
-				fa_dict[seq_name] = []
-			else:
-				fa_dict[seq_name].append(line)
+		line = l.rstrip()
+		if line[0] == ">":
+			seq_name = line[1:].split()[0]
+			fa_dict[seq_name] = []
+		else:
+			fa_dict[seq_name].append(line)
 	result = {}
 	for seq in fa_dict:
 		result[seq] = "".join(fa_dict[seq])
