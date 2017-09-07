@@ -149,7 +149,8 @@ def init(args):
 	subprocess.call(fa_cmd,shell=True)	
 	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
-		vcf_cmd = "ln -s %s ref_vcf/%s && ln -s %s.tbi ref_vcf/%s.tbi" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
+		tmp = ref_vcf+".vcf.gz"
+		vcf_cmd = "ln -s %s ref_vcf/%s && ln -s %s.tbi ref_vcf/%s.tbi" % (data_dict[ref_vcf], tmp,tmp,tmp)
 				
 		subprocess.call(vcf_cmd,shell=True)
 		ref_map = "ref_map_%s" % i
