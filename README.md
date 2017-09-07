@@ -18,4 +18,13 @@ bash download_1kg.sh
 ```
 
 ### Usage
-If you have a 
+If you have a plink formatted bim/bed/fam dataset e.g. `data.bim data.bed data.fam`:
+```
+/path/to/preprocessGWAS.py config /path/to/data
+/path/to/preprocessGWAS.py init config.txt
+```
+This will use the 1KG data downloaded earlier and perform all the steps required before imputation. This can then be followed by imputation:
+```
+/path/to/preprocessGWAS.py impute final.preimpute <chromosome> <threads>
+```
+
