@@ -9,6 +9,10 @@ import json
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
+beagle = "%s/bin/beagle.08Jun17.d8b.jar" % script_dir
+tabix = "%s/bin/tabix" % script_dir
+plink = "%s/bin/plink" % script_dir
+
 def file_len(fname):
 	with open(fname) as f:
 		for i, l in enumerate(f):
@@ -89,7 +93,7 @@ def flip_snp(ref_file,sample):
 	errFile.close()
 	okFile.close()
 	subprocess.call("cat %s.notFound.txt %s.ambiguous.txt > %s.exclude.txt" % (sample,sample,sample), shell=True)
-	plink_cmd = "plink --no-sex --bfile %s --exclude %s.exclude.txt --flip %s.reverse.txt --make-bed --out %s" % ("genotypes/"+sample,sample,sample,sample+".flipped")
+	plink_cmd = "%s --allow-no-sex --bfile %s --exclude %s.exclude.txt --flip %s.reverse.txt --make-bed --out %s" % (plink,"genotypes/"+sample,sample,sample,sample+".flipped")
 	subprocess.call(plink_cmd,shell=True)
 	open(sample+".flipFilter.json","w").write(json.dumps(log_dict))
 
@@ -117,7 +121,7 @@ def impute(args):
 	chrom = args.chr
 	print "python %s/conformToRef.py %s preimpute/%s" % (script_dir,chrom,sample)
 	subprocess.call("python %s/conformToRef.py %s preimpute/%s" % (script_dir,chrom,sample),shell=True)
-	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (sample,chrom,chrom,chrom,sample,chrom,args.threads)
+	beagle_cmd = "java -Xmx50g -jar %s gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (beagle,sample,chrom,chrom,chrom,sample,chrom,args.threads)
 	print beagle_cmd
 	subprocess.call(beagle_cmd,shell=True)
 
@@ -138,10 +142,10 @@ def init(args):
 	for x in ["ref_vcf","ref_map","ref_fasta","genotypes","plots","logs"]:
 		if not os.path.isdir(x):
 			subprocess.call("mkdir %s"%x,shell=True)
-
 	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
 	subprocess.call(fa_cmd,shell=True)	
-	for i in range(1,24):
+	num_chromosomes = len([d for d in data_dict.keys() if "ref_vcf" in d])+1
+	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
 		vcf_cmd = "ln -s %s ref_vcf/%s" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
 		subprocess.call(vcf_cmd,shell=True)
@@ -153,10 +157,10 @@ def init(args):
 			for i in data_dict["chromosomes"].split(","):
 				o.write(i+"\n")
 		else:
-			for i in range(1,24):
+			for i in range(1,num_chromosomes):
 				o.write(str(i)+"\n")
 	print "Indexing VCFs"
-	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"~/software/bcftools-1.3.1/htslib-1.3.1/tabix ref_vcf/ref_vcf_{}.vcf.gz\""
+	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"%s ref_vcf/ref_vcf_{}.vcf.gz\"" % tabix
 	subprocess.call(index_cmd,shell=True)	
 
 	file_paths = data_dict["genotypes"].split(",")
@@ -173,6 +177,7 @@ def init(args):
 			y = file_prefix[i]	
 			o.write("%s preprocess %s .\n" % (sys.argv[0],y))
 		temp = ",".join(["preimpute/"+x+".flipped" for x in file_prefix])
+		print "Number of genotypes: %s" % (len(file_paths))
 		o.write("%s/relaxed_merge.py %s merged.flipped --pca\n" % (script_dir,temp))
 			
 
@@ -209,7 +214,7 @@ def imputationQC(args):
 	if not os.path.isdir("imputation_QC"):
 		subprocess.call("mkdir imputation_QC",shell=True)
 #	subprocess.call("plink --vcf "+vcf_file+" --make-bed --out "+preQC_prefix+" --const-fid",shell=True)
-	subprocess.call("plink --bfile "+preQC_prefix+" --maf "+args.maf+" --geno "+args.geno+" --hwe "+args.hwe+" --make-bed --out "+postQC_prefix,shell=True)
+	subprocess.call("%s --bfile "+preQC_prefix+" --maf "+args.maf+" --geno "+args.geno+" --hwe "+args.hwe+" --make-bed --out %s" % (plink,postQC_prefix),shell=True)
 
 parser = argparse.ArgumentParser(description='Python wrapper to filter variants',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 subparsers = parser.add_subparsers(help="Task to perform")
