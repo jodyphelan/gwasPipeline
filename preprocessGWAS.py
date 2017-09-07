@@ -186,7 +186,7 @@ def init(args):
 		else:	
 			for x in ["fam","bim","bed"]:
 				o.write("ln -s preimpute/%s.flipped.%s preimpute/final.preimpute.%s\n" % (file_prefix[0],x,x))
-		subprocess.call("bash runAnalysis.sh",shell=True)
+	subprocess.call("bash runAnalysis.sh",shell=True)
 						
 
 	
