@@ -3,7 +3,7 @@ cd 1kg
 
 seq 1 22 | xargs -i -P 20 sh -c "wget http://bochet.gcc.biostat.washington.edu/beagle/1000_Genomes_phase3_v5a/individual_chromosomes/chr{}.1kg.phase3.v5a.vcf.gz.tbi" 
 
-seq 1 22 | xargs -i -P 20 sh -c "wget http://bochet.gcc.biostat.washington.edu/beagle/1000_Genomes_phase3_v5a/individual_chromosomes/chr{}.1kg.phase3.v5a.vcf.gz
+seq 1 22 | xargs -i -P 20 sh -c "wget http://bochet.gcc.biostat.washington.edu/beagle/1000_Genomes_phase3_v5a/individual_chromosomes/chr{}.1kg.phase3.v5a.vcf.gz"
 
 wget http://bochet.gcc.biostat.washington.edu/beagle/genetic_maps/plink.GRCh37.map.zip 
 unzip plink.GRCh37.map.zip 
