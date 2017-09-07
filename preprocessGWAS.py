@@ -1,6 +1,5 @@
-#! /home/jody/software/anaconda2/bin/python
+#! /usr/bin/python
 import sys
-from tqdm import tqdm
 import subprocess
 import gzip
 import os
@@ -29,7 +28,7 @@ def fa2dict(filename):
 	fa_dict = {}
 	seq_name = ""
 	with open(filename) as f:
-		for i in tqdm(range(file_len(filename))):
+		for i in (range(file_len(filename))):
 			line = f.readline().rstrip()
 			if line[0] == ">":
 				seq_name = line[1:].split()[0]
@@ -57,7 +56,7 @@ def flip_snp(ref_file,sample):
 	log_dict = {"ok":[],"amb":[],"rev":[],"err":[]}
 	print "Analysing bim file"
 	with open(bim_file) as f:
-		for i in tqdm(range(file_len(bim_file))):
+		for i in (range(file_len(bim_file))):
 			line = f.readline()
 			chr,rid,temp,pos,ref,alt = line.rstrip().split()
 			if chr not in fa_dict:
@@ -131,12 +130,16 @@ def init(args):
 		arr = line.split()
 		data_dict[arr[0]] = arr[1] 
 
+	
+	num_chromosomes = len([d for d in data_dict.keys() if "ref_vcf" in d])+1
+
+
 	ref_check = "ref_fasta" in data_dict.keys()
-	print "Checing for reference Fasta: %s" % ref_check
-	vcf_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="vcf", data_dict.keys())]) == range(1,24)
-	print "Checing for reference VCF files: %s" % vcf_test
-	map_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="map", data_dict.keys())]) == range(1,24)
-	print "Checing for reference map files: %s" % map_test
+	print "Checking for reference Fasta: %s" % ref_check
+	vcf_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="vcf", data_dict.keys())]) == range(1,num_chromosomes)
+	print "Checking for reference VCF files: %s" % vcf_test
+	map_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="map", data_dict.keys())]) == range(1,num_chromosomes)
+	print "Checking for reference map files: %s" % map_test
 	
 	print "Creating directory structure"
 	for x in ["ref_vcf","ref_map","ref_fasta","genotypes","plots","logs"]:
@@ -144,7 +147,6 @@ def init(args):
 			subprocess.call("mkdir %s"%x,shell=True)
 	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
 	subprocess.call(fa_cmd,shell=True)	
-	num_chromosomes = len([d for d in data_dict.keys() if "ref_vcf" in d])+1
 	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
 		vcf_cmd = "ln -s %s ref_vcf/%s" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
@@ -177,9 +179,14 @@ def init(args):
 			y = file_prefix[i]	
 			o.write("%s preprocess %s .\n" % (sys.argv[0],y))
 		temp = ",".join(["preimpute/"+x+".flipped" for x in file_prefix])
-		print "Number of genotypes: %s" % (len(file_paths))
-		o.write("%s/relaxed_merge.py %s merged.flipped --pca\n" % (script_dir,temp))
-			
+		if len(file_paths)>1:
+			o.write("%s/relaxed_merge.py %s final.preimpute --pca\n" % (script_dir,temp))
+		else:	
+			for x in ["fam","bim","bed"]:
+				o.write("ln -s preimpute/%s.flipped.%s reimpute/final.preimpute.%s\n" % (file_prefix[0],x,x))
+#		subprocess.call("bash runAnalysis.sh",shell=True)
+		else:
+						
 
 	
 def fa2json(args):
@@ -200,7 +207,7 @@ def mergeImputed(sample):
 					o.write(line)
 				else:
 					test = False
-		for i in tqdm(range(len(chromosomes))):
+		for i in (range(len(chromosomes))):
 			chrom = chromosomes[i]
 			for line in gzip.open("imputed_vcf/"+sample+"."+chrom+".imputed.vcf.gz","rb"):
 				if line[0]!="#":
