@@ -64,6 +64,9 @@ def flip_snp(ref_file,sample):
 				ambFile.write(rid+"\n")
 				log_dict["amb"].append(rid)
 				continue
+			if chr not in fa_dict or int(pos)-1>len(fa_dict[chr]):
+				print len(fa_dict[chr])
+				print "%s\t%s" % (chr,pos)
 			ref_nuc = fa_dict[chr][int(pos)-1]
 			if ref_nuc not in setACGT:
 				ambFile.write(rid+"\n")
@@ -112,6 +115,7 @@ def impute(args):
 	
 	sample = args.sample
 	chrom = args.chr
+	print "python %s/conformToRef.py %s preimpute/%s" % (script_dir,chrom,sample)
 	subprocess.call("python %s/conformToRef.py %s preimpute/%s" % (script_dir,chrom,sample),shell=True)
 	beagle_cmd = "java8 -Xmx50g -jar ~/software/beagle.03May16.862.jar gt=preimpute/%s.%s.preimpute.vcf ref=ref_vcf/ref_vcf_%s.vcf.gz map=ref_map/ref_map_%s.map out=imputed_vcf/%s.%s.imputed nthreads=%s" % (sample,chrom,chrom,chrom,sample,chrom,args.threads)
 	print beagle_cmd
@@ -125,9 +129,9 @@ def init(args):
 
 	ref_check = "ref_fasta" in data_dict.keys()
 	print "Checing for reference Fasta: %s" % ref_check
-	vcf_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="vcf", data_dict.keys())]) == range(1,23)
+	vcf_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="vcf", data_dict.keys())]) == range(1,24)
 	print "Checing for reference VCF files: %s" % vcf_test
-	map_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="map", data_dict.keys())]) == range(1,23)
+	map_test = sorted([int(x[8:]) for x in filter(lambda x: x[4:7]=="map", data_dict.keys())]) == range(1,24)
 	print "Checing for reference map files: %s" % map_test
 	
 	print "Creating directory structure"
@@ -137,7 +141,7 @@ def init(args):
 
 	fa_cmd = "ln -s %s ref_fasta/%s" % (data_dict["ref_fasta"],"ref_fasta.fa")
 	subprocess.call(fa_cmd,shell=True)	
-	for i in range(1,23):
+	for i in range(1,24):
 		ref_vcf = "ref_vcf_%s" % i
 		vcf_cmd = "ln -s %s ref_vcf/%s" % (data_dict[ref_vcf], ref_vcf+".vcf.gz")
 		subprocess.call(vcf_cmd,shell=True)
@@ -149,7 +153,7 @@ def init(args):
 			for i in data_dict["chromosomes"].split(","):
 				o.write(i+"\n")
 		else:
-			for i in range(1,23):
+			for i in range(1,24):
 				o.write(str(i)+"\n")
 	print "Indexing VCFs"
 	index_cmd = "cat chromosomes.txt | xargs -i -P20 sh -c \"~/software/bcftools-1.3.1/htslib-1.3.1/tabix ref_vcf/ref_vcf_{}.vcf.gz\""

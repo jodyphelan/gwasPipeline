@@ -62,7 +62,9 @@ while len(temp_file)>0:
 	f2 = temp_file.pop(0)
 	if len(temp_file)==0:
 		temp_name = prefix 
-	plink_cmd = "plink --bfile temp_merging/%s --bmerge temp_merging/%s --make-bed --out temp_merging/%s > log 2>err" % (f1,f2,temp_name)
+
+	plink_cmd = "plink --bfile temp_merging/%s --bmerge temp_merging/%s --make-bed --out temp_merging/%s --allow-no-sex > log 2>err" % (f1,f2,temp_name)
+	print plink_cmd
 	subprocess.call(plink_cmd,shell=True)
 	i += 1
 
