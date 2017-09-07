@@ -27,7 +27,7 @@ def gz_file_len(fname):
 def fa2dict(filename):
 	fa_dict = {}
 	seq_name = ""
-	with open(filename) as f:
+	with gzip.open(filename) if filename[-3:]==".gz" else open(filename) as f:
 		for i in (range(file_len(filename))):
 			line = f.readline().rstrip()
 			if line[0] == ">":
@@ -183,8 +183,8 @@ def init(args):
 			o.write("%s/relaxed_merge.py %s final.preimpute --pca\n" % (script_dir,temp))
 		else:	
 			for x in ["fam","bim","bed"]:
-				o.write("ln -s preimpute/%s.flipped.%s reimpute/final.preimpute.%s\n" % (file_prefix[0],x,x))
-#		subprocess.call("bash runAnalysis.sh",shell=True)
+				o.write("ln -s preimpute/%s.flipped.%s preimpute/final.preimpute.%s\n" % (file_prefix[0],x,x))
+		subprocess.call("bash runAnalysis.sh",shell=True)
 						
 
 	
