@@ -110,7 +110,7 @@ def cleanup(base_dir,sample):
 
 def preprocess(args):
 	conf = json.load(open("config.json"))
-	flip_snp("ref_fasta/ref_fasta.fa",args.sample)
+	flip_snp(conf["ref_fasta"],args.sample)
 	cleanup(args.base_dir,args.sample)
 
 def impute(args):
