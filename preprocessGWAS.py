@@ -27,6 +27,8 @@ def gz_file_len(fname):
 def fa2dict(filename):
 	fa_dict = {}
 	seq_name = ""
+	for l in gzip.open(filename) if filename[-3:]==".gz" else open(filename):
+		print l
 	with gzip.open(filename) if filename[-3:]==".gz" else open(filename) as f:
 		for i in (range(file_len(filename))):
 			line = f.readline().rstrip()
