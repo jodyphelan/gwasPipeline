@@ -14,8 +14,9 @@ bash install_prerequisites.sh
 ```
 If you want to use 1000 Genomes reference panels for imputation:
 ```
-bash download_1kg.sh
+bash download_1kg.sh 4
 ```
+Where 4 can be replaced with the number of threads available.
 
 ### Usage
 If you have a plink formatted bim/bed/fam dataset e.g. `data.bim data.bed data.fam`:
