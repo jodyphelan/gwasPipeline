@@ -150,7 +150,7 @@ def init(args):
 	for i in range(1,num_chromosomes):
 		ref_vcf = "ref_vcf_%s" % i
 		tmp = ref_vcf+".vcf.gz"
-		vcf_cmd = "ln -s %s ref_vcf/%s && ln -s %s.tbi ref_vcf/%s.tbi" % (data_dict[ref_vcf], tmp,tmp,tmp)
+		vcf_cmd = "ln -s %s ref_vcf/%s && ln -s %s.tbi ref_vcf/%s.tbi" % (data_dict[ref_vcf], tmp,data_dict[ref_vcf],tmp)
 				
 		subprocess.call(vcf_cmd,shell=True)
 		ref_map = "ref_map_%s" % i
@@ -185,7 +185,7 @@ def init(args):
 			o.write("%s/relaxed_merge.py %s final.preimpute --pca\n" % (script_dir,temp))
 		else:	
 			for x in ["fam","bim","bed"]:
-				o.write("ln -s preimpute/%s.flipped.%s preimpute/final.preimpute.%s\n" % (file_prefix[0],x,x))
+				o.write("ln -s %s/preimpute/%s.flipped.%s preimpute/final.preimpute.%s\n" % (os.getcwd(),file_prefix[0],x,x))
 	subprocess.call("bash runAnalysis.sh",shell=True)
 						
 

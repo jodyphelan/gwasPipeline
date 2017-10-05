@@ -1,3 +1,4 @@
+mkdir bin
 # Plink
 wget --no-check-certificate https://www.cog-genomics.org/static/bin/plink170906/plink_linux_x86_64.zip
 unzip plink_linux_x86_64.zip
