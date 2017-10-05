@@ -8,7 +8,7 @@ Scripts to process genotype data:
 ### Installation
 Basic:
 ```
-clone --recursive https://github.com/jodyphelan/gwasPipeline.git
+git clone --recursive https://github.com/jodyphelan/gwasPipeline.git
 cd gwasPipeline
 bash install_prerequisites.sh
 ```
